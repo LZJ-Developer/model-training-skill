@@ -98,7 +98,7 @@ BBOC 不是「堆算力」。原文自己限定为未经证实的直觉，且已
 
 ```
 run:    <名称>  seed: <s>  commit: <sha>
-gate:   G0 ok / G1 ok / G2 <模型 0.219 vs 线性 0.245>
+gate:   G0 ok / G1 ok / G2 <模型均值 vs 线性基线>
 knob:   <相对参照臂唯一改变的那一样东西；没有就用 ref>
 delta:  <逐分量的向量，不是均值>
 caveat: <这次运行不能说明什么>
@@ -107,7 +107,7 @@ caveat: <这次运行不能说明什么>
 三条硬规则：
 
 - **`knob` 只能有一个。** 同时改两样，差值不可归因。
-- **`delta` 必须是分量向量。** 复合分数会把「一项大涨、其余全平」伪装成全面进步。参考 `references/case-study-perturbation.md` 里那次分解：总分 +0.100 中有 +0.0945 来自单一分量。
+- **`delta` 必须是分量向量。** 复合分数会把「一项大涨、其余全平」伪装成全面进步。参考 `references/case-study-perturbation.md` 里那次分解：总提升中约 95% 来自单一分量。
 - **`caveat` 不能空。** 写不出 caveat，说明你还没想清楚这次运行能证明什么。
 
 完整的产物清单——目录布局、指标表规范、`MENTAL_MODEL.md`（当前模型 + 带日期线索 + 回测 + 上限）、选项表、预测表、尺度表——见 `references/run-artifacts.md`。
