@@ -35,10 +35,11 @@ model-training/
     ├── recipes.md                           # hyperparameters, budgets, param/sample ratio
     ├── run-artifacts.md                     # run.md, MENTAL_MODEL.md, option & prediction tables
     ├── htca-bboc.md                         # the two judgement frameworks, with their limits
+    ├── data-cleaning.md                     # cleaning ladder, tool routing, cleaning ledger
     └── case-study-perturbation.md           # a full worked case with measured numbers
 ```
 
-`SKILL.md` is 173 lines. Everything heavier lives in `references/` and is routed by a symptom table,
+`SKILL.md` is 215 lines. Everything heavier lives in `references/` and is routed by a symptom table,
 so the skill stays cheap to load and deep when you need it.
 
 ---
@@ -62,6 +63,16 @@ so the skill stays cheap to load and deep when you need it.
 | G1 | overfit one batch, all regularisation off | train loss → ~0, and random labels fail |
 | G2 | beat the trivial baseline (mean + closed-form ridge) | otherwise stop tuning |
 | G3 | only now escalate compute | — |
+
+**Data cleaning (the execution layer of G0)**
+
+- Five layers: representation & unit → key alignment → measurement QC → split integrity →
+  before/after verification. Duplicate keys are biological entities, not dataset strings.
+- Tool routing, with boundaries: `scanpy` (single-cell), `single-cell-rna-qc` (MAD QC),
+  `data-cleaning` (tabular audit trail), Data-Juicer (LLM corpora), cleanlab (labels).
+  NeMo Curator is listed as not adopted — its example APIs are stale.
+- Every cleaning step writes a ledger row (`step / why / before / after / config / artifact`);
+  cleaning without a ledger is a silent confound.
 
 **Then**: run-record format, training-loop fixed items, tuning order, anti-patterns, routing.
 
