@@ -118,7 +118,9 @@ NeMo Curator 的示例仍用 `DocumentDataset`、Dask 等已移除接口，先�
 2. **多背景混在一个 `.h5ad`**：`--batch-key` 只影响 Scrublet，不自动分组常规 QC；按技术批次在外层分组，或改用 MAD 自适应。
 3. **保留全转录组**：不要跑默认的 HVG 子集化；原始 counts、完整基因对象、分析子集是三份东西。
 
-验收清单、工具边界与扰动响应项目的专用规则见 `references/data-cleaning.md`。
+常见生物陷阱逐条列在 `references/data-cleaning.md` §6.1：环境 RNA、双细胞、guide 分配歧义、
+on-target 效率差异、CRISPR 模态混淆、对照定义、伪重复、批次混杂、归一化顺序、注释版本漂移、
+低细胞数、效应量尺度、细胞周期、存活偏倚、剂量/时间、供体泄漏。验收清单与扰动项目专用规则同文件。
 
 ## 运行前三条
 
