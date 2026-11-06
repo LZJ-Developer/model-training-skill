@@ -81,18 +81,17 @@ BBOC 不是「堆算力」。原文自己限定为未经证实的直觉，且已
 
 ## 数据清理（G0 的执行层）
 
-可执行脚本 `scripts/sc_clean.py`：`inspect` / `qc` / `pseudobulk`。核心只依赖 anndata、numpy、scipy；
-只有 `qc --scrublet` 需要 scanpy。清洗**只写标记列**（`pass_qc`、`qc_reason`），不删行、不覆盖原对象。
+清洗是受控变换：原始数据只读，每个有损决定可复查，完成标准是写明的契约而不是行数。模型默认会错的
+八件事：补 0、按字符串判重、全局 QC 阈值、重复归一化、均值 pseudobulk、细胞当重复、静默删行、
+默认 HVG 子集化。
 
-三条非显然规则：
+三条最贵的：
 
-- **每一步写一行台账**：`step / why / before / after / config / artifact`。没有台账的清洗无法归因。
-- **`--batch-key` 只影响 Scrublet**，不会按批次自动分组 QC 阈值；多背景数据用 `--group-by` 逐批 MAD，或在外层分组。
-- **保留全转录组**：不要跑默认 HVG 子集化；原始 counts、完整对象、分析子集是三份东西。
+- **表示无法从数值推断**：`.raw` 常是 log-normalized；二次归一化不报错，只改分布。
+- **阈值是局部量**：MAD 在 <50 细胞的组里失效；MT 阈值随组织/细胞类型变。
+- **「未见」按所有语料定义**：donor 覆盖的扰动测的是检索，不是泛化。
 
-工具边界、模型默认会做错的 8 件事与 16 条生物陷阱见 `references/data-cleaning.md`。
-脚本整合自 K-Dense scanpy（BSD-3-Clause）与 Anthropic single-cell-rna-qc（Apache-2.0）；
-改动点（不删行、逐批 MAD、无 scanpy 依赖）在脚本头部注明。
+原则、工具边界与生物陷阱见 `references/data-cleaning.md`。
 
 ## 运行前三条
 

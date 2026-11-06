@@ -30,17 +30,12 @@ Every gate below is cheap (minutes to zero GPU hours) and has an explicit stop c
 ```
 model-training/
 ├── SKILL.md                                 # loaded on every invocation — keep it cheap
-├── THIRD_PARTY_NOTICES.md                   # upstream licences for scripts/sc_clean.py
-├── LICENSES/                                # BSD-3-Clause, Apache-2.0 texts
-├── scripts/sc_clean.py                      # inspect / qc / pseudobulk, with a ledger
-├── scripts/
-│   └── sc_clean.py                          # inspect / qc / pseudobulk, with a cleaning ledger
 └── references/                              # loaded on demand, routed by symptom
     ├── diagnostics.md                       # NaN / spike / plateau / leakage / null controls
     ├── recipes.md                           # hyperparameters, budgets, param/sample ratio
     ├── run-artifacts.md                     # run.md, MENTAL_MODEL.md, option & prediction tables
     ├── htca-bboc.md                         # the two judgement frameworks, with their limits
-    ├── data-cleaning.md                     # cleaning ladder, tool routing, cleaning ledger
+    ├── data-cleaning.md                     # cleaning principles, tool boundaries, bio traps
     └── case-study-perturbation.md           # a full worked case with measured numbers
 ```
 
@@ -77,10 +72,8 @@ so the skill stays cheap to load and deep when you need it.
 - Tool routing, with boundaries: `scanpy` (single-cell), `single-cell-rna-qc` (MAD QC),
   `data-cleaning` (tabular audit trail), Data-Juicer (LLM corpora), cleanlab (labels).
   NeMo Curator is listed as not adopted — its example APIs are stale.
-- Executable SOP: `scripts/sc_clean.py` (`inspect` / `qc` / `pseudobulk`) flags cells instead of
-  dropping them, computes MAD thresholds per batch, and appends a ledger row per stage.
-- Every cleaning step writes a ledger row (`step / why / before / after / config / artifact`);
-  cleaning without a ledger is a silent confound.
+- Cleaning principles, not recipes: representation cannot be inferred from values, thresholds are
+  local, dedupe keys are biological entities, and "unseen" is defined across all corpora.
 
 **Then**: run-record format, training-loop fixed items, tuning order, anti-patterns, routing.
 
@@ -146,12 +139,11 @@ The gate ladder, the composite-metric decomposition rule, the null-control lesso
 number in the case study come from work on PIE-style perturbation-response models
 ([ArcInstitute/pie](https://github.com/ArcInstitute/pie)).
 
-The cleaning script re-integrates the count-validation and pseudobulk logic from
-[K-Dense-AI/scientific-agent-skills](https://github.com/K-Dense-AI/scientific-agent-skills)
-(BSD-3-Clause) and the MAD outlier logic from
-[anthropics/knowledge-work-plugins](https://github.com/anthropics/knowledge-work-plugins)
-(Apache-2.0). Framework content is reused under its own licence; see each project.
-Full notices and licence texts: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+The cleaning section synthesises ideas (no redistributed code) from
+[K-Dense-AI/scientific-agent-skills](https://github.com/K-Dense-AI/scientific-agent-skills),
+[anthropics/knowledge-work-plugins](https://github.com/anthropics/knowledge-work-plugins) and
+[magnus919/agent-skills](https://github.com/magnus919/agent-skills). Each is under its own licence;
+no upstream code is redistributed.
 
 ---
 
