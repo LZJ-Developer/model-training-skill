@@ -109,13 +109,18 @@ def validate_counts(arr, label: str, require_nonzero_cells: bool = True) -> None
         totals = np.asarray(arr.sum(axis=1)).ravel()
         if (totals <= 0).any():
             die(f"{label}: {int((totals <= 0).sum())} zero-total cells; "
-                "filter them before normalisation")
+                "flag them with `qc` and keep `pass_qc` before aggregation")
 
 
-def select_counts(adata, layer: str | None) -> str:
-    """Validate the chosen matrix and mirror it into layers['counts']."""
+def select_counts(adata, layer: str | None,
+                  require_nonzero_cells: bool = True) -> str:
+    """Validate the chosen matrix and mirror it into layers['counts'].
+
+    ``require_nonzero_cells=False`` is for QC: zero-total cells are a QC finding
+    to be flagged, not an input error that forces the caller to delete rows first.
+    """
     arr, label = matrix_of(adata, layer)
-    validate_counts(arr, label)
+    validate_counts(arr, label, require_nonzero_cells=require_nonzero_cells)
     if layer is None:
         if "log1p" in adata.uns:
             die("X carries log1p provenance; pass --counts-layer explicitly")
@@ -227,7 +232,8 @@ def cmd_qc(args) -> None:
     import anndata as ad
 
     adata = load_anndata(args.input)
-    layer_label = select_counts(adata, args.counts_layer)
+    layer_label = select_counts(adata, args.counts_layer,
+                                require_nonzero_cells=False)
     adata.var_names_make_unique()
     classes = annotate_gene_classes(adata)
     if "mt" not in classes:
@@ -293,12 +299,14 @@ def cmd_qc(args) -> None:
 
     hard_mt = adata.obs["pct_counts_mt"].to_numpy() > args.mt_threshold
     min_genes = adata.obs["n_genes_by_counts"].to_numpy() < args.min_genes
+    zero_counts = adata.obs["total_counts"].to_numpy() <= 0
     mt_m = mt_m | hard_mt
-    fail = counts_m | genes_m | mt_m | min_genes | doublet
+    fail = counts_m | genes_m | mt_m | min_genes | doublet | zero_counts
     adata.obs["outlier_counts"] = counts_m
     adata.obs["outlier_genes"] = genes_m
     adata.obs["outlier_mt"] = mt_m
     adata.obs["below_min_genes"] = min_genes
+    adata.obs["zero_counts"] = zero_counts
     adata.obs["pass_qc"] = ~fail
     reasons = []
     for i in range(n_cells0):
@@ -308,6 +316,7 @@ def cmd_qc(args) -> None:
         if mt_m[i]: why.append("mt")
         if min_genes[i]: why.append("min_genes")
         if doublet[i]: why.append("doublet")
+        if zero_counts[i]: why.append("zero_counts")
         reasons.append(",".join(why))
     adata.obs["qc_reason"] = reasons
 
@@ -320,7 +329,7 @@ def cmd_qc(args) -> None:
         "fail_by_metric": {
             "counts_mad": int(counts_m.sum()), "genes_mad": int(genes_m.sum()),
             "mt_mad_or_hard": int(mt_m.sum()), "below_min_genes": int(min_genes.sum()),
-            "doublet": int(doublet.sum()),
+            "doublet": int(doublet.sum()), "zero_counts": int(zero_counts.sum()),
         },
     }
     if groups is not None:
