@@ -81,46 +81,18 @@ BBOC 不是「堆算力」。原文自己限定为未经证实的直觉，且已
 
 ## 数据清理（G0 的执行层）
 
-清洗不是「把数据洗干净」，是**产出可审计的证据**：每一步做了什么、为什么、前后差多少。
-没有台账的清洗 = 静默混杂——它不会让 loss 变难看，只会让所有结论失去归因。
+可执行脚本 `scripts/sc_clean.py`：`inspect` / `qc` / `pseudobulk`。核心只依赖 anndata、numpy、scipy；
+只有 `qc --scrublet` 需要 scanpy。清洗**只写标记列**（`pass_qc`、`qc_reason`），不删行、不覆盖原对象。
 
-### 五层检查
+三条非显然规则：
 
-| 层 | 要回答 | 典型失败 |
-|---|---|---|
-| **表示与单位** | counts / CP10k / log1p？cell / sample / row？ | 二次归一化；把 bulk 汇总当单细胞 |
-| **键对齐** | gene ID、guide、perturbation、context、batch、control 是否同一套键？ | symbol/Ensembl 混用；别名（K562 vs k562_gwps）绕过判重 |
-| **测量 QC** | 深度、检测基因数、线粒体、双细胞；每个细胞留下/剔除的理由 | 统一阈值套在多背景上；只留过滤后矩阵 |
-| **切分完整性** | 同一测量是否跨 split？别名是否绕过判重？ | 行级随机切分；按字符串判重 |
-| **前后验收** | 各背景/扰动的细胞数、基因覆盖、control 均值、响应分布 | 只报「清洗完成」，没有 before/after |
+- **每一步写一行台账**：`step / why / before / after / config / artifact`。没有台账的清洗无法归因。
+- **`--batch-key` 只影响 Scrublet**，不会按批次自动分组 QC 阈值；多背景数据用 `--group-by` 逐批 MAD，或在外层分组。
+- **保留全转录组**：不要跑默认 HVG 子集化；原始 counts、完整对象、分析子集是三份东西。
 
-判重键必须是**生物学实体**，不是数据集里的字符串；「未见」要定义成「在**所有**训练语料里都没有测量」。
-
-### 工具路由
-
-已核对各 `SKILL.md`、配套脚本与依赖，**未安装、未运行**。skill 是流程与入口，真正的清洗由底层库完成；
-装 skill ≠ 装好运行环境。
-
-| 数据 / 任务 | 首选 | 边界 |
-|---|---|---|
-| 单细胞 `.h5ad` 检查、QC、pseudobulk | `scanpy`（K-Dense） | 全套流程含 HVG、聚类；训练清洗按需调用，不要整条跑 |
-| 轻量单细胞 QC / MAD 过滤 | `single-cell-rna-qc`（Anthropic） | 双细胞检测与 ambient RNA 去污染未内置 |
-| 表格 / 元数据 / JSONL 的画像与审计 | `data-cleaning`（magnus919） | 不处理 `.h5ad`；负责日志、数据契约与前后核对 |
-| LLM / 多模态训练语料 | Data-Juicer Agents Harness | 执行能力来自底层运行时；装 skill ≠ 装环境 |
-| 监督标签审计 | `cleanlab`（AREX-Skill） | 需要可信的样本外预测，不能把模型预测错误当脏数据 |
-
-NeMo Curator 的示例仍用 `DocumentDataset`、Dask 等已移除接口，先不用。最小组合：单细胞用
-`scanpy` + `data-cleaning`，MAD 过滤补 Anthropic QC；LLM 语料用 Data-Juicer。
-
-### 三条执行规则
-
-1. **每一步写一行台账**：`step / why / before / after / config / artifact`。没有台账的清洗不算完成。
-2. **多背景混在一个 `.h5ad`**：`--batch-key` 只影响 Scrublet，不自动分组常规 QC；按技术批次在外层分组，或改用 MAD 自适应。
-3. **保留全转录组**：不要跑默认的 HVG 子集化；原始 counts、完整基因对象、分析子集是三份东西。
-
-常见生物陷阱逐条列在 `references/data-cleaning.md` §6.1：环境 RNA、双细胞、guide 分配歧义、
-on-target 效率差异、CRISPR 模态混淆、对照定义、伪重复、批次混杂、归一化顺序、注释版本漂移、
-低细胞数、效应量尺度、细胞周期、存活偏倚、剂量/时间、供体泄漏。验收清单与扰动项目专用规则同文件。
+工具边界、五层检查与 15 条生物陷阱（soup、双细胞、guide 歧义、伪重复、批次混杂、注释漂移等）见
+`references/data-cleaning.md`。上游实现整合自 K-Dense scanpy（BSD-3-Clause）与 Anthropic
+single-cell-rna-qc（Apache-2.0）；改动点（不删行、逐批 MAD、无 scanpy 依赖）在脚本头部注明。
 
 ## 运行前三条
 

@@ -3,6 +3,22 @@
 > 目标不是"把数据洗干净"，而是产出**可审计的清洗证据**：每一步做了什么、为什么、前后差多少。
 > 没有台账的清洗 = 静默混杂；它不会让 loss 变难看，只会让所有结论失去归因。
 
+## 0. 随包脚本
+
+`scripts/sc_clean.py` 是本文件的可执行版本，三个子命令：
+
+| 命令 | 做什么 | 保证 |
+|---|---|---|
+| `inspect` | 形状、X 类型/分布、layer、obs/var、分组大小 | 只读，不改对象 |
+| `qc` | counts 校验 → MT/ribo/HB → 逐批 MAD → 写 `pass_qc` / `qc_reason` | 不删行；不覆盖原对象；写 `qc_summary.json` |
+| `pseudobulk` | 按 `--by` 求和原始 counts，`--min-cells` 过滤 | 元数据必须组内常量；不改源对象 |
+
+依赖 anndata、numpy、scipy；只有 `qc --scrublet` 需要 scanpy。每次运行用 `--ledger` 追加一行台账。
+
+整合自 K-Dense `scanpy`（BSD-3-Clause）与 Anthropic `single-cell-rna-qc`（Apache-2.0）：
+保留 counts 校验、MAD 离群与 pseudobulk 聚合；改为**只标记不删除**、**逐批 MAD**、
+**默认不依赖 scanpy**。上游的 HVG、聚类、注释、绘图不在本脚本内，需要时用原 skill。
+
 ## 何时读这个文件
 
 - 接入新语料，或在训练前走 G0 数据契约
@@ -54,7 +70,9 @@ L4 的判重键必须是**生物学实体**，不是数据集里的字符串：`
 
 ## 3. 工具路由
 
-以下 skill 已核对 `SKILL.md`、配套脚本与依赖，**未安装、未运行**。skill 是流程与入口，真正的
+本包已把与训练数据清洗相关的部分整合为 `scripts/sc_clean.py`；下表保留完整工具的边界，
+需要 HVG / 聚类 / 注释 / 绘图时再用上游 skill。各 skill 已核对 `SKILL.md`、配套脚本与依赖，
+**未安装、未运行**。skill 是流程与入口，真正的
 数据处理由底层库或脚本完成；安装 skill 不等于装好运行环境。
 
 | 数据 / 任务 | 首选 | 提供什么 | 边界 |

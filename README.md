@@ -30,6 +30,8 @@ Every gate below is cheap (minutes to zero GPU hours) and has an explicit stop c
 ```
 model-training/
 ├── SKILL.md                                 # loaded on every invocation — keep it cheap
+├── scripts/
+│   └── sc_clean.py                          # inspect / qc / pseudobulk, with a cleaning ledger
 └── references/                              # loaded on demand, routed by symptom
     ├── diagnostics.md                       # NaN / spike / plateau / leakage / null controls
     ├── recipes.md                           # hyperparameters, budgets, param/sample ratio
@@ -71,6 +73,8 @@ so the skill stays cheap to load and deep when you need it.
 - Tool routing, with boundaries: `scanpy` (single-cell), `single-cell-rna-qc` (MAD QC),
   `data-cleaning` (tabular audit trail), Data-Juicer (LLM corpora), cleanlab (labels).
   NeMo Curator is listed as not adopted — its example APIs are stale.
+- Executable SOP: `scripts/sc_clean.py` (`inspect` / `qc` / `pseudobulk`) flags cells instead of
+  dropping them, computes MAD thresholds per batch, and appends a ledger row per stage.
 - Every cleaning step writes a ledger row (`step / why / before / after / config / artifact`);
   cleaning without a ledger is a silent confound.
 
@@ -138,7 +142,11 @@ The gate ladder, the composite-metric decomposition rule, the null-control lesso
 number in the case study come from work on PIE-style perturbation-response models
 ([ArcInstitute/pie](https://github.com/ArcInstitute/pie)).
 
-Framework content is reused under its own licence; see each project.
+The cleaning script re-integrates the count-validation and pseudobulk logic from
+[K-Dense-AI/scientific-agent-skills](https://github.com/K-Dense-AI/scientific-agent-skills)
+(BSD-3-Clause) and the MAD outlier logic from
+[anthropics/knowledge-work-plugins](https://github.com/anthropics/knowledge-work-plugins)
+(Apache-2.0). Framework content is reused under its own licence; see each project.
 
 ---
 
