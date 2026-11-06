@@ -30,6 +30,9 @@ Every gate below is cheap (minutes to zero GPU hours) and has an explicit stop c
 ```
 model-training/
 ├── SKILL.md                                 # loaded on every invocation — keep it cheap
+├── THIRD_PARTY_NOTICES.md                   # upstream licences for scripts/sc_clean.py
+├── LICENSES/                                # BSD-3-Clause, Apache-2.0 texts
+├── scripts/sc_clean.py                      # inspect / qc / pseudobulk, with a ledger
 ├── scripts/
 │   └── sc_clean.py                          # inspect / qc / pseudobulk, with a cleaning ledger
 └── references/                              # loaded on demand, routed by symptom
@@ -148,6 +151,7 @@ The cleaning script re-integrates the count-validation and pseudobulk logic from
 (BSD-3-Clause) and the MAD outlier logic from
 [anthropics/knowledge-work-plugins](https://github.com/anthropics/knowledge-work-plugins)
 (Apache-2.0). Framework content is reused under its own licence; see each project.
+Full notices and licence texts: [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 
 ---
 
