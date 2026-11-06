@@ -90,9 +90,9 @@ BBOC 不是「堆算力」。原文自己限定为未经证实的直觉，且已
 - **`--batch-key` 只影响 Scrublet**，不会按批次自动分组 QC 阈值；多背景数据用 `--group-by` 逐批 MAD，或在外层分组。
 - **保留全转录组**：不要跑默认 HVG 子集化；原始 counts、完整对象、分析子集是三份东西。
 
-工具边界、五层检查与 15 条生物陷阱（soup、双细胞、guide 歧义、伪重复、批次混杂、注释漂移等）见
-`references/data-cleaning.md`。上游实现整合自 K-Dense scanpy（BSD-3-Clause）与 Anthropic
-single-cell-rna-qc（Apache-2.0）；改动点（不删行、逐批 MAD、无 scanpy 依赖）在脚本头部注明。
+工具边界、模型默认会做错的 8 件事与 16 条生物陷阱见 `references/data-cleaning.md`。
+脚本整合自 K-Dense scanpy（BSD-3-Clause）与 Anthropic single-cell-rna-qc（Apache-2.0）；
+改动点（不删行、逐批 MAD、无 scanpy 依赖）在脚本头部注明。
 
 ## 运行前三条
 

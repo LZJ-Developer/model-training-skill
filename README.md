@@ -68,8 +68,9 @@ so the skill stays cheap to load and deep when you need it.
 
 **Data cleaning (the execution layer of G0)**
 
-- Five layers: representation & unit → key alignment → measurement QC → split integrity →
-  before/after verification. Duplicate keys are biological entities, not dataset strings.
+- Eight defaults models get wrong (zero-fill, string-based dedupe, one global QC threshold,
+  re-normalisation, mean-based pseudobulk, cells-as-replicates, silent row deletion, HVG subsetting).
+  Duplicate keys are biological entities, not dataset strings.
 - Tool routing, with boundaries: `scanpy` (single-cell), `single-cell-rna-qc` (MAD QC),
   `data-cleaning` (tabular audit trail), Data-Juicer (LLM corpora), cleanlab (labels).
   NeMo Curator is listed as not adopted — its example APIs are stale.
