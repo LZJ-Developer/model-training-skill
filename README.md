@@ -39,7 +39,7 @@ model-training/
     └── case-study-perturbation.md           # a full worked case with measured numbers
 ```
 
-`SKILL.md` is 215 lines. Everything heavier lives in `references/` and is routed by a symptom table,
+`SKILL.md` is 188 lines. Everything heavier lives in `references/` and is routed by a symptom table,
 so the skill stays cheap to load and deep when you need it.
 
 ---
