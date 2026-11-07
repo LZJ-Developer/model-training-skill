@@ -1,10 +1,10 @@
 ---
 name: model-training
-description: 支持生物医学研究模型训练的全流程：定义任务与泛化目标、审计数据和切分、实现与排障、小规模验证、预算内训练、评估与复现。重点用于数据受限的虚拟细胞扰动预测，包括未见细胞背景、未见扰动及双未见；也适用于冻结主干加适配器和小模型实验。仅需解读论文、常规数据分析或临床决策时不使用。
-allowed-tools: Read Write Edit Bash
+description: 支持生物医学研究模型训练的全流程：训练前先做文献与 GitHub 充分调研（不局限原领域），再定义任务与泛化目标、审计数据和切分、实现与排障、小规模验证、预算内训练、评估与复现。重点用于数据受限的虚拟细胞扰动预测，包括未见细胞背景、未见扰动及双未见；也适用于冻结主干加适配器和小模型实验。仅需解读论文、常规数据分析或临床决策时不使用。
+allowed-tools: Read Write Edit Bash WebSearch WebFetch
 license: MIT
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
   skill-author: LZJ-Developer
 ---
 
@@ -23,6 +23,18 @@ metadata:
 确认用户希望获得方案、审查还是实际执行；用户已经授权全流程时，继续完成已授权工作，
 不要在每个阶段重复索取确认。信息不足时，先完成不依赖该信息的检查，再只问影响下一步的关键问题。
 
+## 先做文献与代码调研
+
+**结论**：在设计或训练之前，先广泛检索文献与 GitHub，识别可能可用的方法、基线、数据与代码；**不要局限在原领域**。
+
+> You need to first search the literature and GitHub extensively to identify potentially useful results, without restricting yourself to the original area.
+
+- 至少覆盖：任务本身、相邻领域、方法名、数据/基准、评测口径、失败模式。
+- 输出调研台账：论文/仓库、任务、数据、方法、结果、代码/许可、可复用点、风险。
+- 调研结果写入任务卡：最接近的 3 篇工作、候选起点、G2 基线、已知负结果。
+- 没有调研就开始训练，通常是在重复别人已经做过的负结果；没有检索就声称 novelty，通常是信息不足。
+- 完整协议、来源清单与台账模板见 [literature-search.md](references/literature-search.md)。
+
 ## 先写任务契约
 
 复用已有答案，把以下内容记入配置或任务卡；未知项明确写出，不能用默认值伪装成已知。
@@ -35,6 +47,7 @@ metadata:
 | 数据与独立单位 | 一条监督记录是什么？哪些记录共享 donor、实验重复、背景或 control，不能视为独立重复？ |
 | 开发与最终测试 | 训练集拟合什么，验证集选择什么，最终测试集如何隔离？预处理和 evidence 各在哪个分区拟合？ |
 | 判定与资源 | 用什么基线、主指标和分量指标判断进展？可用设备、时长、GPU·h、费用、存储和停止条件是什么？ |
+| 相关研究与基线 | 最接近的 3 篇工作是什么？有哪些可复用代码/数据/基线？已知负结果和评测口径差异是什么？ |
 
 虚拟细胞任务先读 [perturbation-evaluation.md](references/perturbation-evaluation.md)。
 **留出背景和留出扰动分别成功，不等于双未见成功**；双未见需要两轴同时隔离的开发与测试证据。
@@ -88,6 +101,7 @@ metadata:
 
 - 简单基线可包括 no-change control、训练集均值、合适的线性或岭回归；只运行适合目标与输入的方法。
   “同等信息可用”不要求所有算法使用相同形式的特征；额外知识的增益另做信息消融。
+- 调研中找到的已发表基线也要纳入比较；先核对数据重叠、切分单元和评测口径，再判断数字是否可比。
 - 用验证证据选择 checkpoint、超参、阈值、校准方案和早停；主判据预先写明。
   可使用有依据的代理指标，但需检查它与目标指标的关系，不能假定排序相同。
   校准参数按预定开发分区拟合；同一数据拟合后的成绩不能再当独立验证，详见扰动评测契约。
@@ -116,6 +130,7 @@ metadata:
 
 | 当前需要 | 读取 |
 |---|---|
+| 开始新任务/新模态、找基线/代码、判断 novelty | [literature-search.md](references/literature-search.md) |
 | 定义虚拟细胞未见背景、未见扰动、双未见任务；设计切分、基线和指标 | [perturbation-evaluation.md](references/perturbation-evaluation.md) |
 | 清洗、表示、QC、聚合、工具选择与清洗验收 | [data-cleaning.md](references/data-cleaning.md) |
 | NaN、尖峰、平台期、梯度、泄漏、随机化对照与差值可信度 | [diagnostics.md](references/diagnostics.md) |
