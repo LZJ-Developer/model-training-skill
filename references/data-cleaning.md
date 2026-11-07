@@ -1,66 +1,43 @@
 # 数据清理
 
-> 清洗是**受控变换**，不是修饰。完成标准是"输出满足一个写明的契约 + 审阅者能复现"，
-> 不是"还剩多少行"。下面只写模型默认假设会出错、且会改变结论的地方。
+清理是受控变换：输出满足写明的数据契约，并保留原始数据、决策日志和前后对照。扰动项目先读 [任务与评测契约](perturbation-evaluation.md)，再决定哪些变换有意义。
 
-## 1. 表示无法从数值推断
+## 1. 先确认表示与来源
 
-- 整数样 ≠ raw counts；`.raw` 在多数流程里存的是 **log-normalized**，名字不保证来源。
-- 二次归一化不报错，只改分布。判断依据：列和、分位数、`uns['log1p']`、是否有独立 counts 快照。
-- 未测 / 缺失 / 不适用 / 未采集 / 被扣留是五种状态；合并成 0 或 NaN 会改变下游。
-- 解析失败要计数并暴露；静默变 null 会把数据错误伪装成缺失。
+- 整数样数值不能证明是 raw counts；`.raw` 只是赋值时 `X` 与 `var` 的快照，可以是 counts，也可以是变换后的数据。记录来源、矩阵层、单位、基因注释版本、归一化和 log 顺序，不能根据名称猜来源。[AnnData 官方定义](https://anndata.readthedocs.io/en/stable/generated/anndata.AnnData.raw.html)
+- 列和、分位数、`uns['log1p']` 和 counts 快照可帮助检查，不能单独证明完整变换历史。来源不明时保留不确定性，避免二次归一化。
+- 未测、缺失、不适用、未采集、被扣留不等于零效应；解析失败计数并暴露。`tested` 掩码覆盖损失和相关统计，全掩码样本在求均值前处理。
+- 保留原始对象及有序 gene/cell ID；AnnData 按细胞切片会切 `.raw`，按基因切片通常不会，不能假定各层自动同序同维。
 
-## 2. 等价类决定泄漏
+## 2. 预处理服从使用时的信息边界
 
-- 判重、留出、检索的键是**生物学实体**：别名、CVCL vs 名称、注释版本、symbol vs Ensembl。
-- 字符串匹配"通过"不等于无泄漏；等价类错了，检查越严格越危险。
-- 归一化、插补、去重规则只在允许的训练分区上拟合，否则本身就是泄漏。
+- 别名、CVCL/细胞系名称、symbol/Ensembl、化合物标识和注释版本先映射到可审计的等价类，再判重与留出。不同字符串可能指向同一实体；同一名称也可能来自不同实验。
+- HVG、缩放、插补、批次整合、目标分箱等表示变换，写清 `fit` 使用的分区和 `transform` 对象。严格归纳评测不使用验证/最终测试的响应拟合这些表示。校准参数另按任务契约的开发校准分区估计，并将拟合分数与独立验证分开，见任务与评测契约 §3。若任务允许目标背景 control 或无标签适配，单列其可见范围并向所有比较方法开放。
+- 每细胞固定总量归一化可独立作用于允许输入，不等于在全体数据上拟合共享参数；但 `target_sum=None`、高表达基因排除等设置可能依赖集合统计。保存 size factor 的基因范围、参考总量与计算范围。[Scanpy normalize_total](https://scanpy.readthedocs.io/en/stable/generated/scanpy.pp.normalize_total.html)
+- 先按全基因总量归一化再选 HVG，适合保留原库大小定义的流程；其他顺序需明确目标，不能把“必须先归一化再子集”当普遍定律。HVG flavor 的输入要求不同：`seurat`/`cell_ranger` 接收 log 数据，`seurat_v3` 系列接收 counts。[Scanpy HVG](https://scanpy.readthedocs.io/en/stable/generated/scanpy.pp.highly_variable_genes.html)
 
-## 3. 阈值是局部量
+## 3. QC 是判断，不是固定阈值清单
 
-- 全局 QC 阈值会被最大批次绑架；MAD 在 <50 细胞的组里趋近 0，会把半数判成离群。
-- MT 阈值随组织/细胞类型变（常用 8%，神经元可到 15%）；一套阈值套所有背景是错的。
-- 双细胞会混合两个扰动；guide 唯一性通常比 Scrublet 更直接。
-- 异常可能是真实事件，不是自动修复的许可；先取证，再决定。
+- 按实验/批次并结合细胞类型查看 counts、检测基因数、线粒体比例等联合分布；阈值需要组织、建库技术与实验目的依据。小组的 MAD 可能不稳定，离散值或大量并列值可使 MAD 为零，但不存在“少于 50 个细胞必失效”的定律。遇到退化分布时检查原始值、合并有依据的参考组或人工复核，并记录处理方式。
+- 不固定通用 MT 百分比，也不把所有高 MT/低 RNA 细胞直接删掉。扰动可能真实改变细胞存活、大小或转录活性；报告各条件过滤比例及敏感性，避免把效应清掉。[单细胞 QC 方法说明](https://www.sc-best-practices.org/preprocessing-visualization/quality-control/)
+- guide assignment 解决扰动身份，多 guide 既可能是设计的组合也可能提示混样；单 guide 不能排除同 guide 双细胞、未捕获 guide 或其他 multiplet。结合建库信息、表达双细胞检测和需要时的 ambient RNA 审计；guide 唯一性不能替代完整 doublet 检查。
+- 纠正批次效应前确认批次是否与条件混杂；混杂不能靠算法自动恢复成实验对照。QC 差异和异常标签先取证，不能因模型预测不准就改标签。
 
-## 4. 聚合与 DE
+## 4. 聚合、DE 与独立单位
 
-- pseudobulk 用 **raw counts 求和**；均值再 log 会改变均值-方差关系。
-- 独立重复是供体/文库，不是细胞；细胞数只买精度。
-- `rank_genes_groups` 的 p 值不是严格的组间 DE；条件 DE 需按样本聚合 + 独立重复 + 全秩设计。
-- 聚合不能修复混杂、缺重复、双细胞或错误注释。
+- 若使用 count-based pseudobulk DE，通常在生物学重复内按 cell type/condition 对 raw counts 求和，再按所用模型处理库大小和设计矩阵。预测目标若是平均表达，均值聚合可以正当；它回答的问题与 count-based DE 不同。
+- 独立单位由取样与干预设计决定，可能是 donor、动物或独立培养重复；技术文库及监督行不自动成为独立重复。多行可能共享 donor、control 或同一实验，需保留这些依赖关系。聚合不能修复缺重复、混杂或错误注释。
+- DE 输入由方法决定，不是一律回到 raw counts。`rank_genes_groups` 期待 log 数据，主要用于组标记排序；不能忽略生物学重复后把逐细胞检验的 p 值当跨 donor 条件效应证据。整合坐标/校正矩阵也不能未经模型检查就替代 DE 输入。[Scanpy 文档与警告](https://scanpy.readthedocs.io/en/stable/generated/scanpy.tl.rank_genes_groups.html)
+- 记录 DE 的输入层、重复单位、设计、检验、效应量与多重校正；不同语料的 z 近似、Wilcoxon、count-based DE 的 FDR 不能只因列名相同就混为一种证据。[生物学重复与假阳性实证](https://www.nature.com/articles/s41467-021-25960-2)
 
-## 5. 变换改的对象不同
+## 5. 扰动语料的额外检查
 
-- Harmony 改 PCA 坐标、BBKNN 改图、ComBat 改 X；DE 必须回到原始 counts。
-- HVG flavor 依赖表示：seurat/cell_ranger 用 log-normalized，seurat_v3 用 counts；混用会选到不同基因。
-- 子集化会剪 layers，但通常不剪 `.raw`；聚合前保留全基因对象。
-- 归一化要在子集化之前，否则 size factor 变了。
+- 对跨语料重复实验、背景/扰动等价类、响应派生 evidence 和预训练覆盖做审计；“重复实体”和“重复测量”分别记录。合法外部 PPI、序列或已知靶点不自动构成泄漏，关键是其来源及部署时是否可得，详见任务契约。
+- 多个 perturbation 复用同一 control 会产生相关效应估计；保存 control pool ID、匹配规则及权重，不能按复制次数增加独立样本量。
+- 混训前检查各语料单位、效应幅度、敲低效率和 tested 范围。尺度校准只能使用契约允许的信息，并保留未校准对照，避免把真实生物效应强行拉齐。
 
-## 6. 扰动项目的特有泄漏
+## 6. 工具选择与验收
 
-- 同一 `(细胞系, 扰动)` 跨语料重复 → 训练/验证必须互斥。
-- "未见" = **所有**训练语料都未测；只对某一语料未见、但 donor 有测量，测的是检索，不是泛化。
-- bulk 语料的 `fdr` 可能来自 z 近似（本项目的 GWPS 构建即是），不是逐细胞 Wilcoxon；两者不能混比。
-- 控制细胞复用会放大 control 权重。
-- 尺度漂移：多语料平均 |Δ| 可差 3 倍、on-target 可差 16 倍；系数只在训练折估计。
-- donor evidence 必须来自 train 且不是 eval 行；别名归一后要再查一次。
+按任务选库：单细胞对象/QC 用 Scanpy 等经验证工具；表格/元数据用可追溯的校验与映射；大语料清理另选相应运行时。外部 skill 只提供操作指导，不能代替依赖安装、版本核对或数据审计；不默认下载或安装其执行环境。
 
-## 7. 工具边界
-
-| 需要 | 上游 skill | 边界 |
-|---|---|---|
-| 单细胞检查、QC、pseudobulk | [scanpy（K-Dense）](https://github.com/K-Dense-AI/scientific-agent-skills/blob/main/skills/scanpy/SKILL.md) | 全流程含 HVG/聚类；训练清洗只取所需步骤 |
-| 轻量 QC / MAD | [single-cell-rna-qc（Anthropic）](https://github.com/anthropics/knowledge-work-plugins/blob/main/bio-research/skills/single-cell-rna-qc/SKILL.md) | 双细胞、ambient RNA 只给建议，未内置 |
-| 表格 / 元数据审计 | [data-cleaning（magnus919）](https://github.com/magnus919/agent-skills/blob/main/data-cleaning/SKILL.md) | 不处理 `.h5ad`；负责契约、日志、前后核对 |
-| LLM / 多模态语料 | [Data-Juicer Harness](https://github.com/datajuicer/data-juicer-agents/blob/main/skills/data-juicer-agents-harness/SKILL.md) | 执行靠底层运行时；装 skill ≠ 装环境 |
-| 标签审计 | [cleanlab（AREX）](https://github.com/VectorSpaceLab/AREX-Skill/blob/main/skills/repositories/repo-skills/cleanlab/SKILL.md) | 需要可信的样本外预测，不能把模型错误当脏数据 |
-
-NeMo Curator 的示例仍用 `DocumentDataset`、Dask 等已移除接口（后端已迁 Ray），先不用。
-选择工具前先查 API 生命周期与版本：skill 是入口，执行靠库。
-
-## 8. 完成判据
-
-- 输出 + 决策日志 + 前后对照 + 溯源 + 未决项；原始数据只读；审阅者能复现。
-- 语义不确定时停在 quarantine / escalation，不发明值。
-- "干净" = 通过写明的契约，不是没有行剩下。
+交付清理后的数据引用、schema/表示说明、有序 ID 与 hash、分区清单、各条件过滤前后数量、拟合范围、决策日志和未决项。原始数据只读；关键语义无法确定时隔离受影响部分，不能发明数值补齐。
