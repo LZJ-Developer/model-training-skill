@@ -1,6 +1,6 @@
 # model-training
 
-数据受限的生物医学模型训练与调试 skill，覆盖任务定义、数据审计、训练验证、实验比较、恢复与报告。当前重点场景是虚拟细胞扰动预测，特别是**未见细胞背景、未见扰动，以及两者同时未见**时的泛化。
+数据受限的生物医学模型训练与调试 skill，覆盖训练前文献/代码调研、任务定义、数据审计、训练验证、实验比较、恢复与报告。当前重点场景是虚拟细胞扰动预测，特别是**未见细胞背景、未见扰动，以及两者同时未见**时的泛化。
 
 流程围绕可验证的问题组织：部署时究竟能看到什么、评测是否模拟了该条件、模型是否学到了超过简单基线的信号。小模型和冻结主干适配器是可选策略，不由监督行数自动决定。未来 AI + 医疗任务需先定义自己的任务契约和验证方案；扰动预测中的经验不自动构成其他医疗任务的证据。
 
@@ -14,6 +14,7 @@
 model-training/                 # 安装后的目录名
 ├── SKILL.md                    # 范围、核心流程与路由
 └── references/
+    ├── literature-search.md    # 训练前文献 + GitHub 调研协议
     ├── data-cleaning.md        # 表示、QC、聚合、切分与泄漏
     ├── diagnostics.md          # 数值、梯度、指标与复现排障
     ├── recipes.md              # 有条件的超参、容量与预算建议
@@ -24,6 +25,17 @@ model-training/                 # 安装后的目录名
 ```
 
 入口只提供共享约束；清洗、排障或实验报告时再读取对应 reference。脱敏案例用于说明推理过程，其中维护者报告的结果与可公开核验的证据分别标注，不能将案例数值视为新任务的性能保证。
+
+## 先调研，再训练
+
+新任务或新模态开始前，先广泛检索文献与 GitHub，**不要局限在原领域**：
+
+- 覆盖任务、相邻领域、方法、数据/基准、评测口径和失败模式。
+- 产出调研台账：论文/仓库、数据、方法、结果、代码/许可、可复用点、风险。
+- 把最接近的 3 篇工作、候选起点、G2 基线和已知负结果写进任务卡。
+- 协议、来源清单与台账模板见 [references/literature-search.md](references/literature-search.md)。
+
+> You need to first search the literature and GitHub extensively to identify potentially useful results, without restricting yourself to the original area.
 
 ## 安装
 
