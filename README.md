@@ -4,7 +4,7 @@
 
 流程围绕可验证的问题组织：部署时究竟能看到什么、评测是否模拟了该条件、模型是否学到了超过简单基线的信号。小模型和冻结主干适配器是可选策略，不由监督行数自动决定。未来 AI + 医疗任务需先定义自己的任务契约和验证方案；扰动预测中的经验不自动构成其他医疗任务的证据。
 
-这是中文指令包，安装本身不安装 Python 库、不启动训练，也不修改全局环境。实际执行仍受宿主工具、数据权限和任务预算约束。
+这是中文工作流与辅助脚本包，安装本身不安装 Python 库、不启动训练，也不修改全局环境。有效载荷探针需要项目环境已有 NumPy；实际执行仍受宿主工具、数据权限和任务预算约束。
 
 ## 内容与按需读取
 
@@ -13,9 +13,17 @@
 ```text
 model-training/                 # 安装后的目录名
 ├── SKILL.md                    # 范围、核心流程与路由
+├── scripts/
+│   └── audit_embedding_payload.py # 二维 .npy 内容探针与非零退出门禁
+├── tests/
+│   └── test_audit_embedding_payload.py # 合成故障注入与启动阻断验证
+├── evals/
+│   └── silent-failures.json    # 跨层行为场景与独立评审标准
 └── references/
     ├── literature-search.md    # 训练前文献 + GitHub 调研协议
     ├── data-cleaning.md        # 表示、QC、聚合、切分与泄漏
+    ├── silent-failures.md      # 主张→前提→可证伪检查→执行动作的跨层协议
+    ├── payload-integrity.md    # 有效载荷、真实消费、启动门禁与事故处置
     ├── diagnostics.md          # 数值、梯度、指标与复现排障
     ├── recipes.md              # 有条件的超参、容量与预算建议
     ├── run-artifacts.md        # 任务卡、溯源、比较与恢复记录
@@ -25,6 +33,16 @@ model-training/                 # 安装后的目录名
 ```
 
 入口只提供共享约束；清洗、排障或实验报告时再读取对应 reference。脱敏案例用于说明推理过程，其中维护者报告的结果与可公开核验的证据分别标注，不能将案例数值视为新任务的性能保证。
+
+## 静默故障防护
+
+流程正常不代表承载结论的关系正确。新增 [references/silent-failures.md](references/silent-failures.md) 从主张反推关键前提，要求有区分力的独立观测、健康/故障对照、执行边界上的失败动作及可追踪身份，覆盖内容、映射/缓存、训练更新、损失、checkpoint/评测和汇总；按当前风险选检查，不机械重跑大全。
+
+只读 mmap 探针是一个已实现的**文件适配器**：分层或全量分块检查二维 `.npy` 的零行、非有限值、范数及显式方差判据，输出范围明确的 JSON，违约返回非零。它不代表通用协议已自动接入任意训练器；宿主须传播失败并核对真实消费路径，详见 [references/payload-integrity.md](references/payload-integrity.md)。
+
+合成故障注入可在已有 NumPy 的项目环境中运行 `python -m unittest discover -s tests -v`。这些测试验证检测器与假训练启动关系，不是实际生物数据、真实下载根因或模型收益的验证。
+
+维护 skill 时可按 [evals/silent-failures.json](evals/silent-failures.json) 做独立行为评估：只把原始任务给执行者，再由评审者看标准与实际轨迹；覆盖索引、optimizer、有效权重、evaluator、汇总与合法缺失。它不是自动测试通过报告，普通训练不必加载这些评估材料。
 
 ## 先调研，再训练
 

@@ -24,6 +24,7 @@ outputs/<date>_<slug>_<seed>_<run-id>/
   provenance.json    代码、数据、切分、模型与评测器的身份
   run.md             紧凑结果与解释，链接到原始记录
   metrics.tsv        可机读的原始指标与分量
+  checks/            关键边界的检查、对照与故障注入证据（按任务选择）
   samples/           适量脱敏示例或受控本地引用（按需）
   ckpt/              checkpoint 与恢复状态（按需）
 ```
@@ -34,6 +35,10 @@ outputs/<date>_<slug>_<seed>_<run-id>/
 - 数据版本/内容哈希、预处理产物、实体别名映射与 split manifest；
 - 模型结构和权重版本、tokenizer/特征/基因顺序、evidence 构建规则及掩码；
 - 评测器代码与版本、配置/渲染/抽样设置、seed、库与硬件环境。
+
+使用外部特征或派生缓存时，关联各通道的 required/optional 状态、源版本/摘要的可信程度、row-ID 与消费索引身份、生成/变换配置、探针和 policy 版本、审计范围/采样设置、内容报告及真实 loader 覆盖。仅保存“preflight pass”不够；旧报告与当前身份不匹配则失效。可选通道的显式降级及检查未完成也写入配置和 run 状态，详见 [payload-integrity.md](payload-integrity.md)。
+
+跨数据、更新和评测的静默检查还需关联所支持的主张/前提、独立参照、实际执行阶段、判据、pass/fail/unknown/skipped 与失败动作，按 [silent-failures.md](silent-failures.md) 复用已有记录。注明是文档、合成检查、真实路径接入还是科学结论重验，不能用同一个“已验证”代替不同完成状态。
 
 大型受限数据可记录受控位置和分块清单哈希，无需复制入输出目录或上传。记录访问方式与缺失来源；不应把一个不能访问的路径当成已公开可复现的证据。
 
